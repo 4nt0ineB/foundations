@@ -30,10 +30,32 @@ class StackSafeRecursiveExercisesTest extends AnyFunSuite with ScalaCheckDrivenP
     }
   }
 
-  test("min") {}
+  test("min is lte than other elements") {
+    forAll { (numbers: List[Int]) =>
+      for {
+        minValue <- min(numbers)
+        number <- numbers
+      } assert(minValue <= number)
+    }
+  }
 
-  test("reverse") {}
+  test("min belongs to the list") {
+    forAll { (numbers: List[Int]) =>
+      assert(min(numbers) == numbers.minOption)
+    }
+  }
 
-  test("foldLeft") {}
+  test("reverse") {
+    forAll { (numbers: List[Int]) =>
+      assert(numbers.reverse == reverse(numbers))
+    }
+  }
+
+  test("foldLeft") {
+    forAll { (numbers: List[Int]) =>
+      val sameNumbers = foldLeft(numbers, List.empty[Int])((l, num) => l :+ num)
+      assert(sameNumbers == numbers)
+    }
+  }
 
 }
