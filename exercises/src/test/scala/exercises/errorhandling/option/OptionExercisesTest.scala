@@ -7,15 +7,15 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class OptionExercisesTest extends AnyFunSuite with ScalaCheckDrivenPropertyChecks {
 
-  ignore("getAccountId example") {
+  test("getAccountId example") {
     val accountId = AccountId(124)
 
-    assert(getAccountId(Reader(accountId, true)) == Some(accountId))
-    assert(getAccountId(Editor(accountId, "Comic Sans")) == Some(accountId))
-    assert(getAccountId(Admin) == None)
+    assert(Reader(accountId, true).getAccountId == Some(accountId))
+    assert(Admin.getAccountId == None)
+    assert(Editor(accountId, "Comic Sans").getAccountId == Some(accountId))
   }
 
-  ignore("getUserEmail example") {
+  test("getUserEmail example") {
     val users = Map(
       UserId(222) -> User(UserId(222), "john", Admin, Some(Email("j@x.com"))),
       UserId(123) -> User(UserId(123), "elisa", Admin, Some(Email("e@y.com"))),
@@ -27,7 +27,7 @@ class OptionExercisesTest extends AnyFunSuite with ScalaCheckDrivenPropertyCheck
     assert(getUserEmail(UserId(444), users) == None) // no email
   }
 
-  ignore("getAccountIds example") {
+  test("getAccountIds example") {
     val users = List(
       User(UserId(111), "Eda", Editor(AccountId(555), "Comic Sans"), Some(Email("e@y.com"))),
       User(UserId(222), "Bob", Reader(AccountId(555), true), None),
@@ -37,7 +37,7 @@ class OptionExercisesTest extends AnyFunSuite with ScalaCheckDrivenPropertyCheck
     assert(getAccountIds(users) == List(AccountId(555), AccountId(741)))
   }
 
-  ignore("checkAllEmails example success") {
+  test("checkAllEmails example success") {
     assert(
       checkAllEmails(
         List(
@@ -48,7 +48,7 @@ class OptionExercisesTest extends AnyFunSuite with ScalaCheckDrivenPropertyCheck
     )
   }
 
-  ignore("checkAllEmails example failure") {
+  test("checkAllEmails example failure") {
     assert(
       checkAllEmails(
         List(
@@ -61,12 +61,12 @@ class OptionExercisesTest extends AnyFunSuite with ScalaCheckDrivenPropertyCheck
     )
   }
 
-  ignore("sequence example") {
+  test("sequence example") {
     assert(sequence(List(Some(1), Some(2), Some(3))) == Some(List(1, 2, 3)))
     assert(sequence(List(Some(1), None, Some(3))) == None)
   }
 
-  ignore("asEditor example") {
+  test("asEditor example") {
     val accountId = AccountId(124)
 
     assert(asEditor(Reader(accountId, true)) == None)

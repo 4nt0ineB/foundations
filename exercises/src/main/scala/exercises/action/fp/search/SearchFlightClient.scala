@@ -15,7 +15,6 @@ trait SearchFlightClient {
 }
 
 object SearchFlightClient {
-
   // test client which executes the same action for all requests
   def constant(flights: IO[List[Flight]]): SearchFlightClient =
     new SearchFlightClient {

@@ -263,7 +263,6 @@ class UserCreationAnswersTest extends AnyFunSuite with ScalaCheckDrivenPropertyC
       forAll(invalidMaxAttemptGen) { maxAttempt =>
         val console = Console.mock(ListBuffer.empty, ListBuffer.empty)
         val result  = Try(impl(console, maxAttempt))
-
         assert(result.isFailure)
       }
     }

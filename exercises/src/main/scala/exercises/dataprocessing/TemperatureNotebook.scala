@@ -34,16 +34,25 @@ object TemperatureNotebook extends App {
   // a. Implement `samples`, a `ParList` containing all the `Samples` in `successes`.
   // Partition `parSamples` so that it contains 10 partitions of roughly equal size.
   // Note: Check `ParList` companion object
-  lazy val parSamples: ParList[Sample] =
-    ???
+  val partitionSize = Math.ceil(samples.size.toDouble / 10).toInt
+  val ec = fixedSizeExecutionContext(8)
+  lazy val parSamples: ParList[Sample] = ParList.byPartitionSize(partitionSize, samples, ec)
+
+  parSamples.partitions.zipWithIndex.foreach {
+    case (part, i) => println(s"${i}: ${part.size}")
+  }
 
   // b. Implement `minSampleByTemperature` in TemperatureExercises
   lazy val coldestSample: Option[Sample] =
     TemperatureExercises.minSampleByTemperature(parSamples)
 
+  println(s"The coldest sample is $coldestSample")
+
   // c. Implement `averageTemperature` in TemperatureExercises
   lazy val averageTemperature: Option[Double] =
     TemperatureExercises.averageTemperature(parSamples)
+
+  println(s"The average temperature is $averageTemperature")
 
   //////////////////////
   // Benchmark ParList
@@ -54,11 +63,12 @@ object TemperatureNotebook extends App {
   // * List map + sum
   // * TODO ParList foldMap
   // * TODO ParList parFoldMap
-  bench("sum", iterations = 200, warmUpIterations = 40, ignore = true)(
+
+  bench("sum", iterations = 100, warmUpIterations = 40)(
     Labelled("List foldLeft", () => samples.foldLeft(0.0)((state, sample) => state + sample.temperatureFahrenheit)),
     Labelled("List map + sum", () => samples.map(_.temperatureFahrenheit).sum),
-//    Labelled("ParList foldMap", () => ???),
-//    Labelled("ParList parFoldMap", () => ???),
+    Labelled("ParList foldMap", () => parSamples.foldMap(_.temperatureFahrenheit)(Monoid.sum[Double])),
+    Labelled("ParList parFoldMap", () => parSamples.parFoldMap(_.temperatureFahrenheit)(Monoid.sum[Double]))
   )
 
   // Compare the runtime performance of various implementations of `summary`
@@ -66,7 +76,7 @@ object TemperatureNotebook extends App {
   // * List with 1 iterations
   // * TODO ParList with 4 iterations
   // * TODO ParList with 1 iteration
-  bench("summary", iterations = 200, warmUpIterations = 40, ignore = true)(
+  bench("summary", iterations = 100, warmUpIterations = 40)(
     Labelled("List 4 iterations", () => TemperatureExercises.summaryList(samples)),
     Labelled("List 1 iteration", () => TemperatureExercises.summaryListOnePass(samples)),
     Labelled("ParList 4 iterations", () => TemperatureExercises.summaryParList(parSamples)),
@@ -99,7 +109,7 @@ object TemperatureNotebook extends App {
 
   // 1. When we defined `Summary`, we made `min` and `max` an `Option` because the `ParList`
   //   can be empty. However, it is quite expensive because we wrap and unwrap an `Option` for
-  //   every value in the dataset. Instead we could check if the `ParList` is empty at the beginning,
+  //   every value in the dataset. Instead, we could check if the `ParList` is empty at the beginning,
   //   if it is we return None, otherwise we can `reduce` the `ParList` without `Option`.
   //   See `reduceFoldLeftOption` on `List`.
   //
@@ -114,7 +124,7 @@ object TemperatureNotebook extends App {
   //   partition 1 from 0      to 10 000
   //   partition 2 from 10 001 to 25 000
 
-  // 3. `parFoldMap` need to wait for ALL intermediate results to be ready before starting
+  // 3. `parFoldMap` needs to wait for ALL intermediate results to be ready before starting
   //    to fold them. Instead, could we fold the intermediate results as soon as they
   //    are available? Will we always get the same results this way?
   //    (Hint: You would need to make the state thread-safe)

@@ -23,11 +23,15 @@ object SearchFlightService {
   // (see `SearchResult` companion object).
   // Note: A example based test is defined in `SearchFlightServiceTest`.
   //       You can also defined tests for `SearchResult` in `SearchResultTest`
-  def fromTwoClients(client1: SearchFlightClient, client2: SearchFlightClient): SearchFlightService =
-    new SearchFlightService {
-      def search(from: Airport, to: Airport, date: LocalDate): IO[SearchResult] =
-        ???
+  def fromTwoClients(client1: SearchFlightClient, client2: SearchFlightClient)(ec: ExecutionContext): SearchFlightService =
+    (from: Airport, to: Airport, date: LocalDate) => {
+      def searchByClient(client: SearchFlightClient): IO[List[Flight]] =
+        client.search(from, to, date)
+          .handleErrorWith(e => IO.debug(s"an error occurred ${e}") andThen IO(Nil))
 
+      searchByClient(client1)
+        .parZip(searchByClient(client2))(ec)
+        .map { case (flights1, flights2) => SearchResult(flights1 ++ flights2) }
     }
 
   // 2. Several clients can return data for the same flight. For example, if we combine data
@@ -44,10 +48,29 @@ object SearchFlightService {
   // a list of `SearchFlightClient`.
   // Note: You can use a recursion/loop/foldLeft to call all the clients and combine their results.
   // Note: We can assume `clients` to contain less than 100 elements.
-  def fromClients(clients: List[SearchFlightClient]): SearchFlightService =
-    new SearchFlightService {
-      def search(from: Airport, to: Airport, date: LocalDate): IO[SearchResult] =
-        ???
+  def fromClients(clients: List[SearchFlightClient])(ec: ExecutionContext): SearchFlightService =
+    (from: Airport, to: Airport, date: LocalDate) => {
+      def searchByClient(client: SearchFlightClient): IO[List[Flight]] =
+        client.search(from, to, date)
+          .handleErrorWith(e => IO.debug(s"an error occurred ${e}") andThen IO(Nil))
+
+//      def searchAllClients(clients: List[SearchFlightClient]): IO[List[Flight]] =
+//        clients match {
+//          case Nil => IO(Nil)
+//          case client :: others =>
+//            for {
+//              clientFlights <- searchByClient(client)
+//              otherFlights <- searchAllClients(others)
+//            } yield clientFlights ++ otherFlights
+//        }
+//
+//      searchAllClients(clients).map(SearchResult(_))
+//      clients.traverse(searchByClient)
+//        .map(_.flatten)
+//        .map(SearchResult(_))
+      IO.parTraverse(clients)(searchByClient)(ec)
+        .map(_.flatten)
+        .map(SearchResult(_))
     }
 
   // 5. Refactor `fromClients` using `sequence` or `traverse` from the `IO` companion object.

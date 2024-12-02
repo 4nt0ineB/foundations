@@ -1,9 +1,9 @@
 package answers.dataprocessing
 
 import java.time.LocalDate
-
 import org.scalacheck.{Arbitrary, Gen}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 
 trait ParListTestInstances {
